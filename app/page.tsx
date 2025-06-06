@@ -2,22 +2,40 @@
 
 import { useState } from 'react';
 import ImageUpload from '@/components/ImageUpload';
+import { analyzeImageFile, ImageData } from '@/lib/imageAnalysis';
 
 export default function Home() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [imageData, setImageData] = useState<ImageData | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   const handleImageUpload = async (file: File) => {
     setIsAnalyzing(true);
     setUploadedFile(file);
+    setAnalysisError(null);
+    setImageData(null);
     
-    // TODO: ここで画像解析処理を実装
-    console.log('アップロードされたファイル:', file.name, file.size, file.type);
-    
-    // 仮の処理時間
-    setTimeout(() => {
+    try {
+      console.log('画像解析開始:', file.name, file.size, file.type);
+      
+      // Canvas APIを使用して画像データを取得
+      const data = await analyzeImageFile(file, true);
+      setImageData(data);
+      
+      console.log('画像解析完了:', {
+        width: data.width,
+        height: data.height,
+        totalPixels: data.width * data.height,
+        dataSize: data.data.length
+      });
+      
+    } catch (error) {
+      console.error('画像解析エラー:', error);
+      setAnalysisError(error instanceof Error ? error.message : '画像解析に失敗しました');
+    } finally {
       setIsAnalyzing(false);
-    }, 2000);
+    }
   };
 
   return (
@@ -78,11 +96,31 @@ export default function Home() {
             </div>
           )}
 
-          {uploadedFile && !isAnalyzing && (
+          {analysisError && (
+            <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                {analysisError}
+              </div>
+            </div>
+          )}
+
+          {imageData && !isAnalyzing && (
             <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-medium text-green-800 mb-2">✅ 画像データ取得完了</h4>
+                <div className="text-sm text-green-700 space-y-1">
+                  <p><span className="font-medium">解像度:</span> {imageData.width} × {imageData.height}</p>
+                  <p><span className="font-medium">総ピクセル数:</span> {(imageData.width * imageData.height).toLocaleString()}</p>
+                  <p><span className="font-medium">データサイズ:</span> {(imageData.data.length / 1024).toFixed(1)} KB</p>
+                </div>
+              </div>
+              
               <div className="text-center text-gray-600">
-                <p>解析機能は次のタスクで実装予定です</p>
-                <p className="text-sm mt-2">現在のタスク: ImageUpload コンポーネント完了 ✅</p>
+                <p className="text-sm">✅ タスク1-2: Canvas API で画像読み込み & ピクセルデータ取得 完了</p>
+                <p className="text-sm mt-1">次のタスク: RGB統計計算の実装</p>
               </div>
             </div>
           )}
